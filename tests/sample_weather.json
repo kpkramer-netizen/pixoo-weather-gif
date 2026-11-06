@@ -1,0 +1,15 @@
+{
+  "captured": "2026-11-06T14:30:00-05:00",
+  "condition": "partlycloudy",
+  "temperature": 47,
+  "humidity": 60,
+  "is_night": false,
+  "alerts": 0,
+  "forecast": [
+    {"date": "2026-11-06", "condition": "rainy", "temperature": 49, "templow": 37, "precipitation_probability": 37},
+    {"date": "2026-11-07", "condition": "windy", "temperature": 48, "templow": 34, "precipitation_probability": 21},
+    {"date": "2026-11-08", "condition": "windy", "temperature": 54, "templow": 40, "precipitation_probability": 6},
+    {"date": "2026-11-09", "condition": "partlycloudy", "temperature": 54, "templow": 44, "precipitation_probability": 6},
+    {"date": "2026-11-10", "condition": "sunny", "temperature": 59, "templow": 39, "precipitation_probability": 0}
+  ]
+}
