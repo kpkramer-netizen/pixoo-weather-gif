@@ -27,14 +27,20 @@ The GIF is served at `http://<home-assistant-ip>:6943/`. The clock in each GIF i
 
 1. In Home Assistant, go to **Settings → Apps → Install app**, open the **⋮** menu, choose **Repositories**, and add this repository's URL.
 2. Install **Pixoo Weather GIF**.
-3. On the **Configuration** tab, set your entities:
+3. Start the app, then open its settings page with **Open web UI** and choose your entities.
+4. Open `http://<home-assistant-ip>:6943/` to check the GIF.
 
-   | Option | Required | Description |
-   |---|---|---|
-   | `forecast_entity` | Yes | A `weather.*` entity that provides a daily forecast |
-   | `alerts_entity` | No | A sensor whose state is the number of active alerts |
+## Settings
 
-4. Start the app and open `http://<home-assistant-ip>:6943/` to check the GIF.
+The settings page runs inside Home Assistant and only answers requests that come through it. It lists your entities, shows the current screen, and applies changes on the Pixoo's next refresh.
+
+| Setting | Description |
+|---|---|
+| Weather entity | A `weather.*` entity. It must provide a daily forecast; the page checks before saving. |
+| Weather alerts sensor | Optional. A sensor whose state is the number of active alerts. The list shows sensors with "alert" in their name. |
+| Smiley for low chances | Off by default. Shows a smiley instead of nothing when today's chance of rain or snow is under 10%. |
+
+The app's **Configuration** tab has the same three settings. They're used as starting values; once you save on the settings page, its values take priority.
 
 ## Show it on the Pixoo
 

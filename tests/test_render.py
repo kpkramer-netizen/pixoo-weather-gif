@@ -18,10 +18,11 @@ def check(name, cond):
     ok &= bool(cond)
     print("PASS" if cond else "FAIL", name)
 
-def frame(condition="rainy", chance=37, i=0, alerts=0, humidity=76, temperature=44):
+def frame(condition="rainy", chance=37, i=0, alerts=0, humidity=76, temperature=44, smiley=False):
     today = {"date": "2026-11-06", "condition": condition, "temperature": 49, "templow": 37,
              "precipitation_probability": chance}
     w = {"condition": "cloudy", "temperature": temperature, "humidity": humidity, "alerts": alerts,
+         "show_smiley": smiley,
          "forecast": [today] + [dict(today, date=f"2026-11-{d:02d}") for d in range(7, 11)]}
     return render.render_frame(w, NOW, i)
 
@@ -59,6 +60,16 @@ check("humidity stays during an alert", not blank(frame(alerts=1), (52, 20, 64, 
 check("drop shown normally", not blank(frame(humidity=100, chance=99), DROP_BOX))
 check("drop hidden at 100% rain and 100% humidity", blank(frame(humidity=100, chance=100), DROP_BOX))
 check("drop shown at 100% rain and 76% humidity", not blank(frame(humidity=76, chance=100), (46, 20, 51, 25)))
+
+SMILEY_BOX = (render.GAP_X + 3, 21, render.GAP_X + 12, 30)
+check("no smiley unless switched on", blank(frame(chance=5), SMILEY_BOX))
+f = frame(chance=5, smiley=True)
+check("smiley under 10% when on", f.getpixel((render.GAP_X + 5, 21)) == render.PAL["S"])
+check("smiley doesn't touch humidity drop", f.getpixel((render.GAP_X + 13, 23)) == render.BLACK)
+check("no smiley at 10% (shows rain)", text_is(frame(chance=10, smiley=True), PERCENT_BOX, "10%"))
+check("no smiley on fog (shows FOG)", text_is(frame("fog", 0, smiley=True), LABEL_BOX, "FOG"))
+check("smiley and alert together", not blank(frame(chance=0, smiley=True, alerts=1), ALERT_BOX)
+      and frame(chance=0, smiley=True, alerts=1).getpixel((render.GAP_X + 5, 21)) == render.PAL["S"])
 
 print("ALL PASS" if ok else "FAILURES")
 sys.exit(0 if ok else 1)

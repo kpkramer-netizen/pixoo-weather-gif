@@ -1,5 +1,5 @@
 name: Pixoo Weather GIF
-version: "1.1.0"
+version: "1.2.0"
 slug: pixoo_weather_gif
 description: Live animated 64x64 weather GIF for the Divoom Pixoo 64
 url: https://github.com/kpkramer-netizen/pixoo-weather-gif
@@ -10,14 +10,20 @@ startup: application
 boot: auto
 init: false
 homeassistant_api: true
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:weather-partly-cloudy
+panel_title: Pixoo Weather
 watchdog: "tcp://[HOST]:[PORT:6943]"
 ports:
   6943/tcp: 6943
 ports_description:
   6943/tcp: Web server for the weather GIF
 options:
-  forecast_entity: weather.pirate_weather
-  alerts_entity: sensor.pirate_weather_alerts
+  forecast_entity: ""
+  alerts_entity: ""
+  show_smiley: false
 schema:
-  forecast_entity: str
+  forecast_entity: str?
   alerts_entity: str?
+  show_smiley: bool?

@@ -1,0 +1,12 @@
+configuration:
+  forecast_entity:
+    name: Weather entity
+    description: Starting value only. Use the app's settings page (Open web UI) to choose from a list; a value saved there takes priority.
+  alerts_entity:
+    name: Weather alerts sensor
+    description: Starting value only. A value saved on the settings page takes priority.
+  show_smiley:
+    name: Smiley for low chances
+    description: Starting value only. A value saved on the settings page takes priority.
+network:
+  6943/tcp: Web server for the weather GIF

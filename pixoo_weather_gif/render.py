@@ -58,7 +58,7 @@ def put(px, x, y, color):
 
 # ---- Hand-drawn 12px forecast icons, in the card icons' colors ----
 PAL = {"O": (255, 165, 0), "W": (255, 255, 255), "B": (87, 160, 238), "L": (145, 192, 248), "Y": (255, 232, 150),
-       "R": (255, 60, 45), "K": BLACK}
+       "R": (255, 60, 45), "K": BLACK, "S": (255, 205, 40)}
 CLOUD = ["....WWWW....",
          "...WBBBBWWW.",
          "..WBBBBBBBBW",
@@ -143,6 +143,8 @@ COL = dict(date=(150, 190, 255), time=(255, 255, 255), day=(255, 190, 90), rule=
            rain_track=(30, 40, 65), precip=(70, 170, 255))
 DROP = ["..L..", "..L..", ".LLL.", "LLLLL", ".LLL."]
 ALERT_ICON = ["....R....", "...RRR...", "...RKR...", "..RRKRR..", "..RRKRR..", ".RRRRRRR.", ".RRRKRRR.", "RRRRRRRRR"]
+SMILEY = ["..SSSSS..", ".SSSSSSS.", "SSKSSSKSS", "SSKSSSKSS", "SSSSSSSSS",
+          "SKSSSSSKS", "SSKKKKKSS", ".SSSSSSS.", "..SSSSS.."]
 GAP_X = 27  # left edge of the alert icon and precipitation text, between the main icon and the readings
 MIN_CHANCE = 10
 
@@ -198,6 +200,8 @@ def render_frame(w, now, i):
         draw_text(px, GAP_X, 20, percent, COL["precip"])
     if label:
         draw_text(px, GAP_X, 27, label, COL["precip"])
+    elif w.get("show_smiley"):  # optional: under 10% chance of rain or snow, and not foggy
+        blit(px, GAP_X + 3, 21, SMILEY)
 
     hum = f"{round(w['humidity'])}%"
     hx = 63 - text_width(hum)
