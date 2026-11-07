@@ -4,14 +4,28 @@ A Home Assistant app that serves a live, animated 64×64 weather screen for the 
 
 ![Animated weather screen, enlarged 8x](docs/preview.gif)
 
-The screen shows:
+## Reading the screen
 
-- The date, time and weekday
-- An animated icon for current conditions, with temperature and humidity
-- Today's high and low
-- Today's chance of rain or snow when it's 10% or more, or `FOG` on foggy days
-- A blinking warning triangle when weather alerts are active
-- A four-day forecast with animated icons, a rain-chance bar, and highs and lows
+![The weather screen with each element numbered](docs/layout.png)
+
+The top half is today; the bottom half is the next four days. Settings mentioned below are on the [settings page](#settings).
+
+| # | Element | What it shows |
+|---|---|---|
+| 1 | Date | Today's date, month-day (`11-06`) or day-month (`6-11`) |
+| 2 | Time | When the GIF was drawn, 12-hour (`2:30P`) or 24-hour (`14:30`). It only moves on when the display fetches the GIF again. |
+| 3 | Weekday | Today's day of the week |
+| 4 | Current conditions | Animated icon for the weather right now, with night versions after sunset |
+| 5 | Alert | A red warning triangle while the alerts sensor reports one or more active alerts. Blinks once a second, or stays solid. Empty when there are no alerts. |
+| 6 | Today's outlook | Today's chance of rain or snow with `RAIN` or `SNOW`, when it's at or above the threshold (10% by default). Shows `FOG` on foggy days, and either nothing or an optional smiley when the chance is below the threshold. |
+| 7 | Temperature | Current temperature, in the weather entity's units |
+| 8 | Reading | Current humidity (drop icon), or the "feels like" temperature (thermometer icon) |
+| 9 | Today's range | Today's forecast high (yellow) and low (blue) |
+| 10 | Day | Day of the week for each forecast column |
+| 11 | Forecast | Animated icon for that day's forecast conditions |
+| 12 | Rain chance | That day's chance of precipitation. The brighter part fills from the bottom, about 8% per pixel; the dim part is the empty track. |
+| 13 | High | That day's forecast high |
+| 14 | Low | That day's forecast low |
 
 Every weather condition has its own icon, with day and night versions where they apply:
 
@@ -75,7 +89,7 @@ python tests/test_render.py
 python tools/check.py
 ```
 
-`tests/test_server.py` runs the server against a mock Home Assistant API. `tests/test_render.py` checks the alert icon, precipitation text and humidity. `tools/check.py` validates the GIF and rebuilds the images in `docs/`.
+`tests/test_server.py` runs the server against a mock Home Assistant API. `tests/test_render.py` checks the alert icon, precipitation text and humidity. `tools/check.py` validates the GIF and rebuilds the images in `docs/`, including the labeled layout diagram.
 
 The 24px icon sprites in `pixoo_weather_gif/sprites` are generated once from the SVGs in `tools/source_icons`, and only need rebuilding if the icons change. That step also needs Playwright and Microsoft Edge:
 

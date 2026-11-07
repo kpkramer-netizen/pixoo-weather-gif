@@ -55,3 +55,47 @@ for n, (c, night) in enumerate(cases[:20]):
     sheet.paste(f.resize((64 * Z, 64 * Z), Image.NEAREST), ((n % 5) * (64 * Z + 8) + 4, (n // 5) * (64 * Z + 8) + 4))
 sheet.save(ROOT / "docs" / "conditions.png")
 print("cases", len(cases[:20]))
+
+# Labeled diagram of the screen for the README's "Reading the screen" section
+from PIL import ImageDraw, ImageFont
+S, M = 6, 70  # scale, margin
+now = render.datetime(2026, 11, 6, 14, 30)
+d = dict(w, alerts=1)
+f = render.render_frame(d, now, 0).resize((64 * S, 64 * S), Image.NEAREST)
+canvas = Image.new("RGB", (64 * S + 2 * M, 64 * S + M + 20), (24, 24, 30))
+canvas.paste(f, (M, M))
+draw = ImageDraw.Draw(canvas)
+font = ImageFont.load_default(15)
+ds = render.date_text(now)
+tx0 = render.text_width(ds) + (64 - render.text_width("FRI") - render.text_width(ds) - render.text_width(render.clock(now))) // 2
+# number: (box in screen pixels x0, y0, x1, y1), side of the badge, position along that side in screen pixels
+labels = {
+    1: ((0, 0, render.text_width(ds), 5), "left", 2.5),
+    2: ((tx0, 0, tx0 + render.text_width(render.clock(now)), 5), "top", tx0 + 1),
+    3: ((64 - render.text_width("FRI"), 0, 64, 5), "right", 2.5),
+    4: ((0, 8, 24, 32), "left", 18),
+    5: ((render.GAP_X, 9, render.GAP_X + 9, 17), "top", render.GAP_X + 6),
+    6: ((render.GAP_X, 20, render.GAP_X + 15, 32), "left", 26),
+    7: ((47, 8, 64, 18), "right", 13),
+    8: ((45, 20, 64, 25), "right", 22.5),
+    9: ((47, 27, 64, 32), "right", 29.5),
+    10: ((3, 34, 12, 39), "left", 36.5),
+    11: ((3, 40, 15, 52), "left", 43),
+    12: ((1, 40, 2, 52), "left", 49),
+    13: ((3, 53, 12, 58), "left", 55.5),
+    14: ((3, 59, 12, 64), "left", 61.5),
+}
+for n, ((x0, y0, x1, y1), side, at) in labels.items():
+    box =(M + x0 * S, M + y0 * S, M + x1 * S - 1, M + y1 * S - 1)
+    if side == "left":
+        cx, cy, ex, ey = M // 2, M + at * S, box[0], M + at * S
+    elif side == "right":
+        cx, cy, ex, ey = M + 64 * S + M // 2, M + at * S, box[2], M + at * S
+    else:
+        cx, cy, ex, ey = M + at * S, M // 2, M + at * S, box[1]
+    draw.line((cx, cy, ex, ey), fill=(255, 214, 10), width=2)
+    draw.rectangle(box, outline=(255, 214, 10), width=2)
+    draw.ellipse((cx - 13, cy - 13, cx + 13, cy + 13), fill=(255, 214, 10))
+    draw.text((cx, cy), str(n), fill=(20, 20, 20), font=font, anchor="mm")
+canvas.save(ROOT / "docs" / "layout.png")
+print("layout", canvas.size)
