@@ -75,7 +75,13 @@ With a single page and no others, set the integration's scan interval to control
 
 ## Development
 
-The app and its tests need Python and Pillow, plus `tzdata` on Windows. The app's Docker image uses Python 3.13.
+This section is for working on the code. Installing the app in Home Assistant needs none of it.
+
+Install the development requirements, then run the tests:
+
+```bash
+pip install -r requirements-dev.txt
+```
 
 ```bash
 python tests/test_server.py
@@ -89,9 +95,9 @@ python tests/test_render.py
 python tools/check.py
 ```
 
-`tests/test_server.py` runs the server against a mock Home Assistant API. `tests/test_render.py` checks the alert icon, precipitation text and humidity. `tools/check.py` validates the GIF and rebuilds the images in `docs/`, including the labeled layout diagram.
+`tests/test_server.py` runs the server against a mock Home Assistant API. `tests/test_render.py` checks the area beside the main icon and the display settings. `tools/check.py` validates the GIF and rebuilds the images in `docs/`, including the labeled layout diagram.
 
-The 24px icon sprites in `pixoo_weather_gif/sprites` are generated once from the SVGs in `tools/source_icons`, and only need rebuilding if the icons change. That step also needs Playwright and Microsoft Edge:
+The 24px icon sprites in `pixoo_weather_gif/sprites` are generated once from the SVGs in `tools/source_icons`, and only need rebuilding if the icons change. That step also needs the `playwright` package and Microsoft Edge:
 
 ```bash
 python tools/bake_sprites.py

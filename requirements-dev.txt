@@ -1,0 +1,3 @@
+# For running the tests and tools on your own machine. The Home Assistant app installs its own.
+pillow==13.0.0
+tzdata
