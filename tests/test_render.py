@@ -18,13 +18,19 @@ def check(name, cond):
     ok &= bool(cond)
     print("PASS" if cond else "FAIL", name)
 
-def frame(condition="rainy", chance=37, i=0, alerts=0, humidity=76, temperature=44, smiley=False):
+def frame(condition="rainy", chance=37, i=0, alerts=0, humidity=76, temperature=44, smiley=False, **display):
     today = {"date": "2026-11-06", "condition": condition, "temperature": 49, "templow": 37,
              "precipitation_probability": chance}
     w = {"condition": "cloudy", "temperature": temperature, "humidity": humidity, "alerts": alerts,
-         "show_smiley": smiley,
+         "show_smiley": smiley, **display,
          "forecast": [today] + [dict(today, date=f"2026-11-{d:02d}") for d in range(7, 11)]}
     return render.render_frame(w, NOW, i)
+
+def header_is(img, text, x, color):
+    expected = Image.new("RGB", (64, 64), render.BLACK)
+    render.draw_text(expected.load(), x, 0, text, color)
+    box = (x, 0, x + render.text_width(text), 5)
+    return list(img.crop(box).getdata()) == list(expected.crop(box).getdata())
 
 def blank(img, box):
     return img.crop(box).getbbox() is None
@@ -70,6 +76,34 @@ check("no smiley at 10% (shows rain)", text_is(frame(chance=10, smiley=True), PE
 check("no smiley on fog (shows FOG)", text_is(frame("fog", 0, smiley=True), LABEL_BOX, "FOG"))
 check("smiley and alert together", not blank(frame(chance=0, smiley=True, alerts=1), ALERT_BOX)
       and frame(chance=0, smiley=True, alerts=1).getpixel((render.GAP_X + 5, 21)) == render.PAL["S"])
+
+
+# Display settings
+check("threshold 25 hides 20%", blank(frame(chance=20, precip_threshold=25), PERCENT_BOX))
+check("threshold 25 shows 25%", text_is(frame(chance=25, precip_threshold=25), PERCENT_BOX, "25%"))
+check("threshold 5 shows 5%", text_is(frame(chance=5, precip_threshold=5), PERCENT_BOX, "5%"))
+f = frame(chance=20, precip_threshold=25, smiley=True)
+check("smiley follows the threshold", f.getpixel((render.GAP_X + 5, 21)) == render.PAL["S"])
+check("12-hour clock by default", render.clock(NOW) == "7:22P" and render.clock(NOW.replace(hour=0)) == "12:22A")
+check("24-hour clock", render.clock(NOW, "24h") == "19:22" and render.clock(NOW.replace(hour=0), "24h") == "0:22")
+check("month-day date by default", render.date_text(NOW) == "11-06")
+check("day-month date", render.date_text(NOW, "day_month") == "6-11")
+check("day-month drawn in the header", header_is(frame(date_format="day_month"), "6-11", 0, render.COL["date"]))
+check("solid alert stays on", not blank(frame(alerts=1, i=5, alert_style="solid"), ALERT_BOX))
+check("blinking alert by default", blank(frame(alerts=1, i=5), ALERT_BOX))
+HUM_BOX = (52, 20, 64, 25)
+f = frame(reading="feels_like", apparent_temperature=38)
+expected = Image.new("RGB", (64, 64), render.BLACK)
+render.draw_text(expected.load(), 61 - render.text_width("38"), 20, "38", render.COL["hum"])
+check("feels like shows the apparent temperature", list(f.crop((54, 20, 61, 25)).getdata())
+      == list(expected.crop((54, 20, 61, 25)).getdata()) and f.getpixel((63, 20)) == render.COL["hum"])
+check("feels like has a thermometer", f.getpixel((51, 23)) == render.PAL["R"])
+check("falls back to humidity without apparent temperature",
+      list(frame(reading="feels_like").crop(HUM_BOX).getdata()) == list(frame().crop(HUM_BOX).getdata()))
+f = frame(reading="feels_like", apparent_temperature=-12, chance=100, temperature=104)
+check("negative feels like fits", f.getpixel((63, 20)) == render.COL["hum"])
+check("thermometer still fits beside 100% with a 3-character reading", f.getpixel((47, 23)) == render.PAL["R"]
+      and f.getpixel((render.GAP_X + 15, 23)) == render.BLACK)
 
 print("ALL PASS" if ok else "FAILURES")
 sys.exit(0 if ok else 1)

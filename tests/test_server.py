@@ -21,7 +21,7 @@ class HA(BaseHTTPRequestHandler):
             {"entity_id": "weather.noforecast", "state": "sunny", "attributes": {"friendly_name": "No forecast"}},
             {"entity_id": "sensor.alerts", "state": MODE["alerts"], "attributes": {"friendly_name": "Weather Alerts"}},
             {"entity_id": "sensor.power", "state": "5", "attributes": {"friendly_name": "Power"}}])
-        if "weather." in self.path: return self.reply({"state": MODE["state"], "attributes": {"temperature": 47.4, "humidity": 60}})
+        if "weather." in self.path: return self.reply({"state": MODE["state"], "attributes": {"temperature": 47.4, "humidity": 60, "apparent_temperature": 41.6}})
         if "alerts" in self.path: return self.reply({"state": MODE["alerts"]})
         if "sun.sun" in self.path: return self.reply({"state": "above_horizon"})
         self.reply({}, 404)
@@ -52,7 +52,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *a, **k): return None
 
 def post(form, path="/save"):
-    data = urllib.parse.urlencode(form).encode()
+    data = urllib.parse.urlencode({"precip_threshold": "10", **form}).encode()
     try:
         r = urllib.request.build_opener(NoRedirect).open(f"http://127.0.0.1:18099{path}", data, timeout=5)
         return r.status, r.headers.get("Location"), r.read().decode()
@@ -97,12 +97,25 @@ try:
     status, loc, body = post({"forecast_entity": "weather.noforecast", "alerts_entity": ""})
     check("rejects a weather entity with no daily forecast", status == 400 and saved() is None and "not saved" in body)
     check("screen unaffected by a rejected save", get()[0] == 200)
-    status, loc, _ = post({"forecast_entity": "weather.other", "alerts_entity": "", "show_smiley": "on"})
+    check("display settings on the page", 'name="precip_threshold"' in page and 'value="12h" selected' in page
+          and 'value="month_day" selected' in page and 'value="blink" selected' in page and 'value="humidity" selected' in page)
+    for bad in ("0", "101", "abc", ""):
+        status, _, body = post({"forecast_entity": "weather.test", "precip_threshold": bad})
+        check(f"rejects threshold {bad!r}", status == 400 and saved() is None and "1 to 100" in body)
+    status, _, _ = post({"forecast_entity": "weather.test", "clock_format": "13h"})
+    check("rejects an unknown choice", status == 400 and saved() is None)
+    status, loc, _ = post({"forecast_entity": "weather.other", "alerts_entity": "", "show_smiley": "on",
+                           "precip_threshold": "25", "reading": "feels_like", "clock_format": "24h",
+                           "date_format": "day_month", "alert_style": "solid"})
     check("saves and redirects relative to ingress", status == 303 and loc == "./?saved=1")
-    check("settings written", saved() == {"forecast_entity": "weather.other", "alerts_entity": "", "show_smiley": True}, str(saved()))
+    check("settings written", saved() == {"forecast_entity": "weather.other", "alerts_entity": "", "show_smiley": True,
+                                          "precip_threshold": 25, "reading": "feels_like", "clock_format": "24h",
+                                          "date_format": "day_month", "alert_style": "solid"}, str(saved()))
     page = get("/?saved=1", 18099)[2].decode()
     check("page reflects saved settings", "Saved." in page and 'value="weather.other" selected' in page
-          and 'name="show_smiley" value="on" checked' in page)
+          and 'name="show_smiley" value="on" checked' in page and 'value="25"' in page
+          and 'value="24h" selected' in page and 'value="day_month" selected' in page
+          and 'value="solid" selected' in page and 'value="feels_like" selected' in page)
     check("GIF still served after a change", get()[0] == 200)
     MODE["fail"] = True
     check("keeps serving through HA failure (cached)", get()[0] == 200)
@@ -129,6 +142,7 @@ MODE["fail"] = True; w.fetched = 0
 check("refresh failure keeps last data", w.gif() is not None and w.data["condition"] == "rainy")
 MODE["fail"] = False; MODE["alerts"] = "2"; w.fetched = 0; w.gif()
 check("alert count read", w.data["alerts"] == 2)
+check("apparent temperature read", w.data["apparent_temperature"] == 41.6)
 MODE["alerts"] = "unknown"; w.fetched = 0; w.gif()
 check("bad alert state doesn't break the screen", w.data["alerts"] == 0)
 
@@ -137,9 +151,10 @@ d = tempfile.mkdtemp()
 server.OPTIONS, server.SETTINGS = os.path.join(d, "options.json"), os.path.join(d, "settings.json")
 check("defaults with no files", server.load_settings() == server.DEFAULTS)
 json.dump({"forecast_entity": "weather.a", "alerts_entity": "sensor.a", "junk": 1}, open(server.OPTIONS, "w"))
-check("Configuration tab values used first", server.load_settings() == {"forecast_entity": "weather.a", "alerts_entity": "sensor.a", "show_smiley": False})
+check("Configuration tab values used first", server.load_settings() == dict(server.DEFAULTS, forecast_entity="weather.a", alerts_entity="sensor.a"))
 server.save_settings({"forecast_entity": "weather.b", "alerts_entity": "", "show_smiley": True})
-check("settings page values win", server.load_settings() == {"forecast_entity": "weather.b", "alerts_entity": "", "show_smiley": True})
+check("settings page values win, older files get new defaults",
+      server.load_settings() == dict(server.DEFAULTS, forecast_entity="weather.b", show_smiley=True))
 w.update({"forecast_entity": "weather.b", "alerts_entity": "", "show_smiley": True})
 check("changing the entity drops cached data", w.data is None)
 server.INGRESS_ALLOW = {"10.9.9.9"}

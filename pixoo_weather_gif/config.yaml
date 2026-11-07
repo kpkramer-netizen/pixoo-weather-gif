@@ -1,5 +1,5 @@
 name: Pixoo Weather GIF
-version: "1.2.0"
+version: "1.3.0"
 slug: pixoo_weather_gif
 description: Live animated 64x64 weather GIF for the Divoom Pixoo 64
 url: https://github.com/kpkramer-netizen/pixoo-weather-gif
@@ -23,7 +23,17 @@ options:
   forecast_entity: ""
   alerts_entity: ""
   show_smiley: false
+  precip_threshold: 10
+  reading: humidity
+  clock_format: 12h
+  date_format: month_day
+  alert_style: blink
 schema:
   forecast_entity: str?
   alerts_entity: str?
   show_smiley: bool?
+  precip_threshold: int(1,100)?
+  reading: list(humidity|feels_like)?
+  clock_format: list(12h|24h)?
+  date_format: list(month_day|day_month)?
+  alert_style: list(blink|solid)?

@@ -18,7 +18,15 @@ INGRESS_PORT = int(os.environ.get("INGRESS_PORT", "8099"))
 # Home Assistant's ingress proxy is the only client allowed to reach the settings page.
 INGRESS_ALLOW = set(os.environ.get("INGRESS_ALLOW", "172.30.32.2").split(","))
 REFRESH_S = 30  # the Pixoo asks about once a minute; weather never needs fetching more often
-DEFAULTS = {"forecast_entity": "", "alerts_entity": "", "show_smiley": False}
+DEFAULTS = {"forecast_entity": "", "alerts_entity": "", "show_smiley": False, "precip_threshold": 10,
+            "reading": "humidity", "clock_format": "12h", "date_format": "month_day", "alert_style": "blink"}
+CHOICES = {  # setting: [(value, label)]; the first is the default
+    "reading": [("humidity", "Humidity"), ("feels_like", "Feels like temperature")],
+    "clock_format": [("12h", "12-hour (7:22P)"), ("24h", "24-hour (19:22)")],
+    "date_format": [("month_day", "Month-day (11-07)"), ("day_month", "Day-month (7-11)")],
+    "alert_style": [("blink", "Blinking"), ("solid", "Solid")],
+}
+DISPLAY = ("show_smiley", "precip_threshold", "reading", "clock_format", "date_format", "alert_style")
 
 
 def ha(path, payload=None):
@@ -84,8 +92,8 @@ def fetch_weather(opts, tz):
     except OSError as err:
         log.warning("sun.sun unavailable: %s", err)
     return {"condition": state["state"], "temperature": attrs.get("temperature") or 0,
-            "humidity": attrs.get("humidity") or 0, "is_night": is_night, "alerts": alerts,
-            "forecast": forecast}
+            "humidity": attrs.get("humidity") or 0, "apparent_temperature": attrs.get("apparent_temperature"),
+            "is_night": is_night, "alerts": alerts, "forecast": forecast}
 
 
 class Weather:
@@ -117,8 +125,8 @@ class Weather:
             if self.data is None:
                 return None
             out = io.BytesIO()
-            render.render_gif(dict(self.data, show_smiley=self.opts.get("show_smiley", False)), out,
-                              now=datetime.now(self.tz))
+            display = {k: self.opts.get(k, DEFAULTS[k]) for k in DISPLAY}
+            render.render_gif(dict(self.data, **display), out, now=datetime.now(self.tz))
             return out.getvalue()
 
 
@@ -187,6 +195,8 @@ p.sub {{ color: var(--muted); margin: 0 0 20px; }}
 label {{ display: block; font-weight: 600; margin: 14px 0 4px; }}
 label:first-child {{ margin-top: 0; }}
 .hint {{ color: var(--muted); font-size: 13px; margin-top: 4px; }}
+h2 {{ font-size: 16px; margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }}
+input[type=number] {{ width: 90px; font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }}
 select {{ width: 100%; font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }}
 .check {{ display: flex; gap: 10px; align-items: flex-start; font-weight: 600; margin-top: 16px; }}
 .check input {{ width: 18px; height: 18px; margin-top: 2px; }}
@@ -211,8 +221,29 @@ code {{ font-size: 13px; }}
 {alert_options}
 </select>
 <div class="hint">A sensor whose state is the number of active alerts. Any number above 0 shows the alert icon.</div>
+<h2>Display</h2>
+<label for="precip_threshold">Rain and snow threshold (%)</label>
+<input type="number" id="precip_threshold" name="precip_threshold" min="1" max="100" step="1" value="{precip_threshold}" required>
+<div class="hint">Today's chance of rain or snow is shown at or above this. Foggy days always show FOG.</div>
 <div class="check"><input type="checkbox" id="show_smiley" name="show_smiley" value="on"{smiley_checked}>
-<label for="show_smiley" style="margin:0">Show a smiley when today's chance of rain or snow is under 10%</label></div>
+<label for="show_smiley" style="margin:0">Show a smiley when today's chance is below the threshold</label></div>
+<label for="reading">Reading under the temperature</label>
+<select id="reading" name="reading">
+{reading_options}
+</select>
+<div class="hint">Feels like uses the weather entity's apparent temperature. Without it, humidity is shown.</div>
+<label for="clock_format">Clock</label>
+<select id="clock_format" name="clock_format">
+{clock_format_options}
+</select>
+<label for="date_format">Date</label>
+<select id="date_format" name="date_format">
+{date_format_options}
+</select>
+<label for="alert_style">Alert icon</label>
+<select id="alert_style" name="alert_style">
+{alert_style_options}
+</select>
 <button type="submit">Save</button>
 </form>
 <div class="card preview">
@@ -234,7 +265,14 @@ def render_page(settings, message="", error=False):
         weather_options=options_html(weather, settings["forecast_entity"],
                                      None if settings["forecast_entity"] else "Choose a weather entity"),
         alert_options=options_html(alerts, settings["alerts_entity"], "None (no alert icon)"),
-        smiley_checked=" checked" if settings["show_smiley"] else "")
+        smiley_checked=" checked" if settings["show_smiley"] else "",
+        precip_threshold=int(settings["precip_threshold"]),
+        **{f"{name}_options": choice_html(name, settings[name]) for name in CHOICES})
+
+
+def choice_html(name, selected):
+    return "\n".join(f'<option value="{v}"{" selected" if v == selected else ""}>{html.escape(label)}</option>'
+                     for v, label in CHOICES[name])
 
 
 def validate(form, tz):
@@ -249,8 +287,19 @@ def validate(form, tz):
         raise ValueError("Choose a weather entity from the list.")
     if alerts and alerts not in known:
         raise ValueError(f"{alerts} doesn't exist in Home Assistant.")
+    try:
+        threshold = int(form.get("precip_threshold", [""])[0])
+    except ValueError:
+        threshold = 0
+    if not 1 <= threshold <= 100:
+        raise ValueError("The rain and snow threshold must be a whole number from 1 to 100.")
     settings = {"forecast_entity": forecast, "alerts_entity": alerts,
-                "show_smiley": form.get("show_smiley", [""])[0] == "on"}
+                "show_smiley": form.get("show_smiley", [""])[0] == "on", "precip_threshold": threshold}
+    for name, options in CHOICES.items():
+        value = form.get(name, [options[0][0]])[0]
+        if value not in {v for v, _ in options}:
+            raise ValueError(f"Unknown value for {name}: {value}")
+        settings[name] = value
     try:
         data = fetch_weather(settings, tz)
     except Exception as err:

@@ -8,5 +8,20 @@ configuration:
   show_smiley:
     name: Smiley for low chances
     description: Starting value only. A value saved on the settings page takes priority.
+  precip_threshold:
+    name: Rain and snow threshold (%)
+    description: Starting value only. A value saved on the settings page takes priority.
+  reading:
+    name: Reading under the temperature
+    description: Starting value only. A value saved on the settings page takes priority.
+  clock_format:
+    name: Clock
+    description: Starting value only. A value saved on the settings page takes priority.
+  date_format:
+    name: Date
+    description: Starting value only. A value saved on the settings page takes priority.
+  alert_style:
+    name: Alert icon
+    description: Starting value only. A value saved on the settings page takes priority.
 network:
   6943/tcp: Web server for the weather GIF

@@ -38,9 +38,14 @@ The settings page runs inside Home Assistant and only answers requests that come
 |---|---|
 | Weather entity | A `weather.*` entity. It must provide a daily forecast; the page checks before saving. |
 | Weather alerts sensor | Optional. A sensor whose state is the number of active alerts. The list shows sensors with "alert" in their name. |
-| Smiley for low chances | Off by default. Shows a smiley instead of nothing when today's chance of rain or snow is under 10%. |
+| Rain and snow threshold | Default 10%. Today's chance of rain or snow is shown at or above this. Foggy days always show `FOG`. |
+| Smiley for low chances | Off by default. Shows a smiley instead of nothing when today's chance is below the threshold. |
+| Reading under the temperature | Humidity (default), or the "feels like" temperature with a thermometer icon. Falls back to humidity if the weather entity has no apparent temperature. |
+| Clock | 12-hour (default) or 24-hour. |
+| Date | Month-day (default) or day-month. |
+| Alert icon | Blinking (default) or solid. |
 
-The app's **Configuration** tab has the same three settings. They're used as starting values; once you save on the settings page, its values take priority.
+The app's **Configuration** tab has the same settings. They're used as starting values; once you save on the settings page, its values take priority.
 
 ## Show it on the Pixoo
 

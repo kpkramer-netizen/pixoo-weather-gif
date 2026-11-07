@@ -145,14 +145,22 @@ DROP = ["..L..", "..L..", ".LLL.", "LLLLL", ".LLL."]
 ALERT_ICON = ["....R....", "...RRR...", "...RKR...", "..RRKRR..", "..RRKRR..", ".RRRRRRR.", ".RRRKRRR.", "RRRRRRRRR"]
 SMILEY = ["..SSSSS..", ".SSSSSSS.", "SSKSSSKSS", "SSKSSSKSS", "SSSSSSSSS",
           "SKSSSSSKS", "SSKKKKKSS", ".SSSSSSS.", "..SSSSS.."]
+THERMO = [".W.", ".W.", ".W.", "RRR", ".R."]
 GAP_X = 27  # left edge of the alert icon and precipitation text, between the main icon and the readings
 MIN_CHANCE = 10
 
-def clock(now):
+def clock(now, fmt="12h"):
+    if fmt == "24h":
+        return f"{now.hour}:{now.minute:02d}"
     h = now.hour % 12 or 12
     return f"{h}:{now.minute:02d}{'A' if now.hour < 12 else 'P'}"
 
-def outlook(day):
+def date_text(now, fmt="month_day"):
+    if fmt == "day_month":
+        return f"{now.day}-{now.month:02d}"
+    return f"{now.month}-{now.day:02d}"
+
+def outlook(day, threshold=MIN_CHANCE):
     """Return (percent text, label) for a forecast day; either can be None.
 
     Fog has no percentage because the forecast only gives a chance of precipitation.
@@ -161,7 +169,7 @@ def outlook(day):
     if condition == "fog":
         return None, "FOG"
     chance = round(day.get("precipitation_probability") or 0)
-    if chance < MIN_CHANCE:
+    if chance < threshold:
         return None, None
     return f"{chance}%", "SNOW" if condition in ("snowy", "snowy-rainy") else "RAIN"
 
@@ -170,11 +178,12 @@ def render_frame(w, now, i):
     px = img.load()
 
     # Header: date, time, weekday
-    draw_text(px, 0, 0, f"{now.month}-{now.day:02d}", COL["date"])
-    t = clock(now)
+    ds = date_text(now, w.get("date_format", "month_day"))
+    draw_text(px, 0, 0, ds, COL["date"])
+    t = clock(now, w.get("clock_format", "12h"))
     wd = now.strftime("%a").upper()[:3]
     draw_text(px, 64 - text_width(wd), 0, wd, COL["day"])
-    d_end = text_width(f"{now.month}-{now.day:02d}")  # centre the time in the gap
+    d_end = text_width(ds)  # centre the time in the gap
     draw_text(px, d_end + (64 - text_width(wd) - d_end - text_width(t)) // 2, 0, t, COL["time"])
     for x in range(64):
         px[x, 6] = COL["rule"]
@@ -191,23 +200,32 @@ def render_frame(w, now, i):
     for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):  # degree mark
         put(px, 62 + dx, 8 + dy, COL["temp"])
 
-    if w.get("alerts") and (i // 5) % 2 == 0:  # blinks once a second
+    if w.get("alerts") and (w.get("alert_style") == "solid" or (i // 5) % 2 == 0):  # blink: 1s on, 1s off
         blit(px, GAP_X, 9, ALERT_ICON)
 
     today = w["forecast"][0]
-    percent, label = outlook(today)
+    percent, label = outlook(today, w.get("precip_threshold", MIN_CHANCE))
     if percent:
         draw_text(px, GAP_X, 20, percent, COL["precip"])
     if label:
         draw_text(px, GAP_X, 27, label, COL["precip"])
-    elif w.get("show_smiley"):  # optional: under 10% chance of rain or snow, and not foggy
+    elif w.get("show_smiley"):  # optional: below the threshold, and not foggy
         blit(px, GAP_X + 3, 21, SMILEY)
 
-    hum = f"{round(w['humidity'])}%"
-    hx = 63 - text_width(hum)
-    if GAP_X + text_width(percent or "") < hx - 6:  # leave out the drop if it would touch the percentage
-        blit(px, hx - 6, 20, DROP)
-    draw_text(px, hx, 20, hum, COL["hum"])
+    # Reading under the temperature: humidity, or "feels like" when the entity provides it
+    feels = w.get("apparent_temperature")
+    if w.get("reading") == "feels_like" and feels is not None:
+        text = str(round(feels))
+        rx = 61 - text_width(text)  # leaves a one-pixel gap before the degree mark
+        put(px, 63, 20, COL["hum"])
+        icon, icon_x = THERMO, rx - 4
+    else:
+        text = f"{round(w['humidity'])}%"
+        rx = 63 - text_width(text)
+        icon, icon_x = DROP, rx - 6
+    if GAP_X + text_width(percent or "") < icon_x:  # leave out the icon if it would touch the percentage
+        blit(px, icon_x, 20, icon)
+    draw_text(px, rx, 20, text, COL["hum"])
 
     hi, lo = str(round(today["temperature"])), str(round(today["templow"]))
     draw_text(px, 63 - text_width(lo), 27, lo, COL["lo"])
