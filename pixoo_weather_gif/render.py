@@ -57,7 +57,8 @@ def put(px, x, y, color):
         px[x, y] = color
 
 # ---- Hand-drawn 12px forecast icons, in the card icons' colors ----
-PAL = {"O": (255, 165, 0), "W": (255, 255, 255), "B": (87, 160, 238), "L": (145, 192, 248), "Y": (255, 232, 150)}
+PAL = {"O": (255, 165, 0), "W": (255, 255, 255), "B": (87, 160, 238), "L": (145, 192, 248), "Y": (255, 232, 150),
+       "R": (255, 60, 45), "K": BLACK}
 CLOUD = ["....WWWW....",
          "...WBBBBWWW.",
          "..WBBBBBBBBW",
@@ -138,13 +139,29 @@ def main_icon(cond, night):
 # ---- Layout ----
 COL = dict(date=(150, 190, 255), time=(255, 255, 255), day=(255, 190, 90), rule=(55, 55, 70),
            temp=(255, 255, 255), hum=(120, 200, 255), hi=(255, 205, 90), lo=(90, 160, 255),
-           fc_day=(235, 235, 235), fc_hi=(230, 230, 230), alert=(255, 70, 50), rain=(70, 150, 255),
-           rain_track=(30, 40, 65))
+           fc_day=(235, 235, 235), fc_hi=(230, 230, 230), rain=(70, 150, 255),
+           rain_track=(30, 40, 65), precip=(70, 170, 255))
 DROP = ["..L..", "..L..", ".LLL.", "LLLLL", ".LLL."]
+ALERT_ICON = ["....R....", "...RRR...", "...RKR...", "..RRKRR..", "..RRKRR..", ".RRRRRRR.", ".RRRKRRR.", "RRRRRRRRR"]
+GAP_X = 27  # left edge of the alert icon and precipitation text, between the main icon and the readings
+MIN_CHANCE = 10
 
 def clock(now):
     h = now.hour % 12 or 12
     return f"{h}:{now.minute:02d}{'A' if now.hour < 12 else 'P'}"
+
+def outlook(day):
+    """Return (percent text, label) for a forecast day; either can be None.
+
+    Fog has no percentage because the forecast only gives a chance of precipitation.
+    """
+    condition = day.get("condition")
+    if condition == "fog":
+        return None, "FOG"
+    chance = round(day.get("precipitation_probability") or 0)
+    if chance < MIN_CHANCE:
+        return None, None
+    return f"{chance}%", "SNOW" if condition in ("snowy", "snowy-rainy") else "RAIN"
 
 def render_frame(w, now, i):
     img = Image.new("RGB", (64, 64), BLACK)
@@ -160,10 +177,10 @@ def render_frame(w, now, i):
     for x in range(64):
         px[x, 6] = COL["rule"]
 
-    # Current: animated 24px icon, large temperature, humidity or alert, today's high/low
+    # Current: animated 24px icon, alert icon, precipitation outlook, temperature, humidity, today's high/low
     sheet = main_icon(w["condition"], w.get("is_night", False))
     frame = sheet.crop((i * MAIN, 0, (i + 1) * MAIN, MAIN))
-    img.paste(frame, (1, 8), frame)
+    img.paste(frame, (0, 8), frame)
 
     temp = str(round(w["temperature"]))
     tw = text_width(temp, 2)
@@ -172,16 +189,22 @@ def render_frame(w, now, i):
     for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):  # degree mark
         put(px, 62 + dx, 8 + dy, COL["temp"])
 
-    if w.get("alerts"):
-        if (i // 5) % 2 == 0:
-            draw_text(px, 29, 20, "ALERT", COL["alert"])
-    else:
-        hum = f"{round(w['humidity'])}%"
-        hx = 63 - text_width(hum)
-        blit(px, hx - 6, 20, DROP)
-        draw_text(px, hx, 20, hum, COL["hum"])
+    if w.get("alerts") and (i // 5) % 2 == 0:  # blinks once a second
+        blit(px, GAP_X, 9, ALERT_ICON)
 
     today = w["forecast"][0]
+    percent, label = outlook(today)
+    if percent:
+        draw_text(px, GAP_X, 20, percent, COL["precip"])
+    if label:
+        draw_text(px, GAP_X, 27, label, COL["precip"])
+
+    hum = f"{round(w['humidity'])}%"
+    hx = 63 - text_width(hum)
+    if GAP_X + text_width(percent or "") < hx - 6:  # leave out the drop if it would touch the percentage
+        blit(px, hx - 6, 20, DROP)
+    draw_text(px, hx, 20, hum, COL["hum"])
+
     hi, lo = str(round(today["temperature"])), str(round(today["templow"]))
     draw_text(px, 63 - text_width(lo), 27, lo, COL["lo"])
     draw_text(px, 63 - text_width(lo) - 2 - text_width(hi), 27, hi, COL["hi"])

@@ -43,13 +43,15 @@ for n, (c, night) in enumerate(cases[:20]):
     for k in range(1, 5):
         d["forecast"][k]["condition"] = fc[(n + k * 2) % len(fc)]
         d["forecast"][k]["precipitation_probability"] = (n * 17 + k * 25) % 101
+    d["forecast"][0]["condition"] = c
+    d["forecast"][0]["precipitation_probability"] = (n * 23) % 101
     if n == 1:
         d.update(temperature=104, humidity=100)
         d["forecast"][0].update(temperature=108, templow=99)
     if n == 2:
         d.update(temperature=-12, alerts=1)
         d["forecast"][1].update(temperature=-10, templow=-22)
-    f = render.render_frame(d, render.datetime(2026, 12, 28, 12, 45), 6)
+    f = render.render_frame(d, render.datetime(2026, 12, 28, 12, 45), 0)
     sheet.paste(f.resize((64 * Z, 64 * Z), Image.NEAREST), ((n % 5) * (64 * Z + 8) + 4, (n // 5) * (64 * Z + 8) + 4))
 sheet.save(ROOT / "docs" / "conditions.png")
 print("cases", len(cases[:20]))

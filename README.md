@@ -8,7 +8,9 @@ The screen shows:
 
 - The date, time and weekday
 - An animated icon for current conditions, with temperature and humidity
-- Today's high and low, or a blinking `ALERT` when weather alerts are active
+- Today's high and low
+- Today's chance of rain or snow when it's 10% or more, or `FOG` on foggy days
+- A blinking warning triangle when weather alerts are active
 - A four-day forecast with animated icons, a rain-chance bar, and highs and lows
 
 Every weather condition has its own icon, with day and night versions where they apply:
@@ -55,10 +57,14 @@ python tests/test_server.py
 ```
 
 ```bash
+python tests/test_render.py
+```
+
+```bash
 python tools/check.py
 ```
 
-`tests/test_server.py` runs the server against a mock Home Assistant API. `tools/check.py` validates the GIF and rebuilds the images in `docs/`.
+`tests/test_server.py` runs the server against a mock Home Assistant API. `tests/test_render.py` checks the alert icon, precipitation text and humidity. `tools/check.py` validates the GIF and rebuilds the images in `docs/`.
 
 The 24px icon sprites in `pixoo_weather_gif/sprites` are generated once from the SVGs in `tools/source_icons`, and only need rebuilding if the icons change. That step also needs Playwright and Microsoft Edge:
 
