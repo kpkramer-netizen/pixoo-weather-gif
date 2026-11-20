@@ -58,7 +58,7 @@ def put(px, x, y, color):
 
 # ---- Hand-drawn 12px forecast icons, in the card icons' colors ----
 PAL = {"O": (255, 165, 0), "W": (255, 255, 255), "B": (87, 160, 238), "L": (145, 192, 248), "Y": (255, 232, 150),
-       "R": (255, 60, 45), "K": BLACK, "S": (255, 205, 40)}
+       "R": (255, 60, 45), "K": BLACK, "S": (255, 165, 0)}
 CLOUD = ["....WWWW....",
          "...WBBBBWWW.",
          "..WBBBBBBBBW",
@@ -137,8 +137,8 @@ def main_icon(cond, night):
     return _cache[name]
 
 # ---- Layout ----
-COL = dict(date=(150, 190, 255), time=(255, 255, 255), day=(255, 190, 90), rule=(55, 55, 70),
-           temp=(255, 255, 255), hum=(120, 200, 255), hi=(255, 205, 90), lo=(90, 160, 255),
+COL = dict(date=(150, 190, 255), time=(255, 255, 255), day=(255, 165, 0), rule=(55, 55, 70),
+           temp=(255, 255, 255), hum=(120, 200, 255), hi=(255, 165, 0), lo=(90, 160, 255),
            fc_day=(235, 235, 235), fc_hi=(230, 230, 230), rain=(70, 150, 255),
            rain_track=(30, 40, 65), precip=(70, 170, 255))
 DROP = ["..L..", "..L..", ".LLL.", "LLLLL", ".LLL."]
