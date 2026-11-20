@@ -20,7 +20,7 @@ The top half is today; the bottom half is the next four days. Settings mentioned
 | 6 | Today's outlook | Today's chance of rain or snow with `RAIN` or `SNOW`, when it's at or above the threshold (10% by default). Shows `FOG` on foggy days, and either nothing or an optional smiley when the chance is below the threshold. |
 | 7 | Temperature | Current temperature, in the weather entity's units |
 | 8 | Reading | Current humidity (drop icon), or the "feels like" temperature (thermometer icon) |
-| 9 | Today's range | Today's forecast high (yellow) and low (blue) |
+| 9 | Today's range | Today's forecast high (orange, matching the sun) and low (blue) |
 | 10 | Day | Day of the week for each forecast column |
 | 11 | Forecast | Animated icon for that day's forecast conditions |
 | 12 | Rain chance | That day's chance of precipitation. The brighter part fills from the bottom, about 8% per pixel; the dim part is the empty track. |
